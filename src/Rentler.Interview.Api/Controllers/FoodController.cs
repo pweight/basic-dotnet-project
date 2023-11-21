@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 namespace Rentler.Interview.Api.Controllers;
@@ -28,7 +27,12 @@ public class FoodController : ControllerBase
         {
             totalResults = allFoods.Count,
             pageNumber = pageNumber,
-            results = paginatedFoods
+            foodsPreview = paginatedFoods.Select(p => new 
+            {
+                id = p.Id,
+                brand = p.Brand,
+                description = p.Description,
+            }).ToList()
         };
         return Ok(response);
     }
@@ -87,5 +91,30 @@ public class FoodController : ControllerBase
         _foodContext.SaveChanges();
 
         return Ok(id);
+    }
+
+    [HttpGet("search/{searchTerm}/page/{pageNumber}/size/{pageSize}")]
+    public async Task<ActionResult<Food>> Search(string searchTerm, int pageNumber, int pageSize)
+    {
+        var foods = await _foodContext.Foods.ToListAsync();
+
+        if (foods == null)
+        {
+            return NotFound();
+        }
+        var searchedAndPaginateFoods = foods
+            .Where(f => f.Description.Contains(searchTerm)) // Search
+            .Skip((pageNumber - 1) * pageSize) // Paginate
+            .Take(pageSize)
+            .ToList();
+
+        var response = new
+        {
+            totalResults = foods.Count,
+            pageNumber = pageNumber,
+            foods = searchedAndPaginateFoods
+        };
+
+        return Ok(response);
     }
 }
