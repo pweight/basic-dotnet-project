@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 namespace Rentler.Interview.Api.Controllers;
@@ -16,11 +17,20 @@ public class FoodController : ControllerBase
         _foodContext = foodContext;
     }
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Food>>> Get()
+    [HttpGet("page/{pageNumber}/size/{pageSize}")]
+    public async Task<IActionResult> Get(int pageNumber, int pageSize)
     {
         var allFoods = await _foodContext.Foods.ToListAsync();
-        return Ok(allFoods);
+
+        var paginatedFoods = allFoods.Skip((pageNumber - 1) * pageSize).Take(pageSize);
+
+        var response = new
+        {
+            totalResults = allFoods.Count,
+            pageNumber = pageNumber,
+            results = paginatedFoods
+        };
+        return Ok(response);
     }
 
     [HttpGet("{id}")]
